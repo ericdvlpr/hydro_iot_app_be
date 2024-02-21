@@ -73,5 +73,7 @@ if(!error){
 
 app.listen(port, () => {
   console.log(`Example app listening on port ${port}`)
-  console.log(supabase)
+  if(!supabase){
+    console.log('Connected to Supabase')
+  }
 })
