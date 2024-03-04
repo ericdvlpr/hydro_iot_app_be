@@ -110,7 +110,7 @@ if(!error){
     .select('*','user_settings(phLevels)')
 
     if(!error){
-      res.status(200)
+      res.status(200).json(phLevels)
     }
   })
 
