@@ -144,7 +144,7 @@ if(!error){
   app.post('/getSettings',async(req,res)=>{
     let { data: user_settings, error } = await supabase
   .from('user_settings')
-  .select(res.body.sensor)
+  .select(req.body.sensor)
   .eq('id', '41')
 
     if(!error){
