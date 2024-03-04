@@ -5,7 +5,7 @@ import bodyParser from "body-parser";
 import cors from 'cors';
 
 const now = new Date();
-const port = process.env.PORT || 3000
+const port = 3000
 
 const app = express();
 
@@ -107,7 +107,7 @@ if(!error){
   app.get('/fetchPhLvl',async(req,res)=>{
     const { data: phLevels, error } = await supabase
     .from('phLevels')
-    .select('*','user_settings(phLevels)')
+    .select('data','user_settings(phLevels)')
 
     if(!error){
       res.status(200).json(phLevels)
