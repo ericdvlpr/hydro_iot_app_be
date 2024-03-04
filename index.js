@@ -117,7 +117,7 @@ if(!error){
   app.get('/fetchTdsLvl',async(req,res)=>{
     const { data: tdsLevels, error } = await supabase
     .from('tdsLevels')
-    .select('data')
+    .select('*')
     if(!error){
       res.json(tdsLevels)
     }
@@ -140,6 +140,20 @@ if(!error){
       res.json(waterTemp)
     }
   })
+
+  app.post('/getSettings',async(req,res)=>{
+  var column = "phLevels"
+    let { data: user_settings, error } = await supabase
+  .from('user_settings')
+  .select(column)
+  .eq('id', '41')
+
+    if(!error){
+      res.json(user_settings);
+    }
+          
+  })
+
 // app.get('/', (req, res) => {
 // const doc = db.collection('phlevel').doc('one').set({data:'2023-12-19',level:1.0});
 //   res.send('Hello World!')
