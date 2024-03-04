@@ -142,10 +142,9 @@ if(!error){
   })
 
   app.post('/getSettings',async(req,res)=>{
-  var column = "phLevels"
     let { data: user_settings, error } = await supabase
   .from('user_settings')
-  .select(column)
+  .select(res.body.sensor)
   .eq('id', '41')
 
     if(!error){
