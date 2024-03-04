@@ -117,7 +117,7 @@ if(!error){
   app.get('/fetchTdsLvl',async(req,res)=>{
     const { data: tdsLevels, error } = await supabase
     .from('tdsLevels')
-    .select('data,user_settings(phLevels)')
+    .select('data')
     if(!error){
       res.json(tdsLevels)
     }
