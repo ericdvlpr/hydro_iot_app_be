@@ -107,9 +107,10 @@ if(!error){
   app.get('/fetchPhLvl',async(req,res)=>{
     const { data: phLevels, error } = await supabase
     .from('phLevels')
-    .select('*')
+    .select('*','user_settings(phLevels)')
+
     if(!error){
-      res.json(phLevels)
+      res.status(200)
     }
   })
 
@@ -146,7 +147,7 @@ if(!error){
 
 app.listen(port, () => {
   console.log(`Example app listening on port ${port}`)
-  if(!supabase){
+  if(supabase){
     console.log('Connected to Supabase')
   }
 })
