@@ -30,10 +30,10 @@ app.post('/addPhLvl',async(req,res)=>{
   .insert([
     { data: req.body.data },
   ])
-  if(error){
-    console.log(error)
+  if(!error){
+    return res.status(200).send("PH level data received");
   }
-  return res.status(200)
+ 
 })
 
 app.post('/addWaterLvl',async(req,res)=>{
@@ -43,7 +43,7 @@ app.post('/addWaterLvl',async(req,res)=>{
     { data: req.body.data },
   ])
   if(!error){
-    res.status(200)
+    res.status(200).send("Water level data received");
   }
  })
 
@@ -56,7 +56,7 @@ app.post('/addWaterLvl',async(req,res)=>{
 ])
 console.log(error)
 if(!error){
-  res.status(200)
+  res.status(200).send("Water Temp data received");
 }
  })
 
@@ -69,7 +69,7 @@ const { error } = await supabase
 ])
 
 if(!error){
-  res.status(200)
+  res.status(200).send("Tds lvl data received");
 }
         
  })
@@ -142,16 +142,50 @@ if(!error){
   })
 
   app.post('/getSettings',async(req,res)=>{
-    let { data: user_settings, error } = await supabase
-  .from('user_settings')
-  .select(req.body.sensor)
-  .eq('id', '41')
-
-    if(!error){
-      res.json(user_settings);
+    
+    let reading=await getSensorReading(req.body.sensor)
+    let settings=await getUserSetting(req.body.sensor)
+    if(settings[0].waterTemp > reading[0].data || settings[0].waterTemp < reading[0].data){
+      console.log('Send Notif')
+      return res.status(200).json({
+        "notif":true
+      })
     }
+  //   let { data: user_settings, error } = await supabase
+  // .from('user_settings')
+  // .select(req.body.sensor)
+  // .eq('id', '41')
+
+  //   if(!error){
+  //     res.json(user_settings);
+  //   }
           
   })
+
+  async function getSensorReading(table_name){
+    
+    const { data, error } = await supabase
+    .from(table_name)
+    .select('data')
+    .order('id', { ascending: false })
+    .limit(1)
+    
+    if(!error){
+      return data
+    }
+  }
+
+  async function getUserSetting(sensor){
+    console.log(sensor)
+    let { data: user_settings, error } = await supabase
+    .from('user_settings')
+    .select(sensor)
+    .eq('id', '41')
+  
+      if(!error){
+       return user_settings;
+      }
+  }
 
 // app.get('/', (req, res) => {
 // const doc = db.collection('phlevel').doc('one').set({data:'2023-12-19',level:1.0});
