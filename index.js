@@ -4,7 +4,14 @@ import morgan from 'morgan'
 import bodyParser from "body-parser";
 import cors from 'cors';
 
-const now = new Date();
+
+var curr = new Date; // get current date
+var first = curr.getDate() - curr.getDay(); // First day is the day of the month - the day of the week
+var last = first + 6; // last day is the first day + 6
+
+var firstday = new Date(curr.setDate(first)).toISOString();
+var lastday = new Date(curr.setDate(last)).toISOString();
+
 const port = 3000
 
 const app = express();
@@ -25,10 +32,14 @@ app.get("/api",(req,res)=>{
 
 app.post('/addPhLvl',async(req,res)=>{
   
+  
+  const data = await getPlusMinusPhLvl().then(function(result){ return result.plusMinus})
+  let phLvlData = +req.body.data + data
+ 
   const { error } = await supabase
   .from('phLevels')
   .insert([
-    { data: req.body.data },
+    { data: phLvlData },
   ])
   if(!error){
     return res.status(200).send("PH level data received");
@@ -94,15 +105,7 @@ if(!error){
     }
           
   })
-  app.get('/fetchSettings',async(req,res)=>{
-    const { data:settings,error } = await supabase
-    .from('user_settings')
-    .select('*')
 
-    if(!error){
-      res.json(settings)
-    }
-  })
 
   app.get('/fetchPhLvl',async(req,res)=>{
     const { data: phLevels, error } = await supabase
@@ -119,7 +122,7 @@ if(!error){
     .from('tdsLevels')
     .select('*')
     if(!error){
-      res.json(tdsLevels)
+      res.status(200).json(tdsLevels)
     }
   })
 
@@ -128,7 +131,7 @@ if(!error){
     .from('waterLevels')
     .select('*')
     if(!error){
-      res.json(waterLevels)
+      res.status(200).json(waterLevels)
     }
   })
 
@@ -137,20 +140,23 @@ if(!error){
     .from('waterTemp')
     .select('*')
     if(!error){
-      res.json(waterTemp)
+      res.status(200).json(waterTemp)
     }
   })
 
   app.post('/getSettings',async(req,res)=>{
-    
     let reading=await getSensorReading(req.body.sensor)
     let settings=await getUserSetting(req.body.sensor)
-    if(settings[0].waterTemp > reading[0].data || settings[0].waterTemp < reading[0].data){
-      console.log('Send Notif')
-      return res.status(200).json({
-        "notif":true
-      })
-    }
+    // console.log(reading)
+    // console.log(settings)
+
+    
+    // if(settings[0].waterTemp > reading[0].data || settings[0].waterTemp < reading[0].data){
+    //   console.log('Send Notif')
+    //   return res.status(200).json({
+    //     "notif":true
+    //   })
+    // }
   //   let { data: user_settings, error } = await supabase
   // .from('user_settings')
   // .select(req.body.sensor)
@@ -162,28 +168,27 @@ if(!error){
           
   })
 
-  async function getSensorReading(table_name){
+  async function getPlusMinusPhLvl(){
     
     const { data, error } = await supabase
-    .from(table_name)
-    .select('data')
-    .order('id', { ascending: false })
-    .limit(1)
+    .from('user_settings')
+    .select('plusMinus')
+    .single();
     
     if(!error){
-      return data
+     return data
     }
   }
 
   async function getUserSetting(sensor){
-    console.log(sensor)
+
     let { data: user_settings, error } = await supabase
     .from('user_settings')
     .select(sensor)
     .eq('id', '41')
   
       if(!error){
-       return user_settings;
+        res.status(200).json(user_settings);
       }
   }
 
@@ -191,7 +196,66 @@ if(!error){
 // const doc = db.collection('phlevel').doc('one').set({data:'2023-12-19',level:1.0});
 //   res.send('Hello World!')
 // })
+function formatDate(date) {
+  var d = new Date(date),
+      month = '' + (d.getMonth() + 1),
+      day = '' + d.getDate(),
+      year = d.getFullYear();
 
+  if (month.length < 2) 
+      month = '0' + month;
+  if (day.length < 2) 
+      day = '0' + day;
+
+  return [year, month, day].join('-');
+}
+
+app.get('/getPhLvlStat',async(req,res)=>{
+  console.log('this')
+  let { data, error } = await supabase
+    .from('phLevels')
+    .select('data')
+    .limit(5)
+ 
+    if(!error){
+      res.status(200).json(data);
+    }
+})
+app.get('/getTDSLvlStat',async(req,res)=>{
+  let { data, error } = await supabase
+    .from(req.body.tblName)
+    .select('data')
+    .order('created_at', { ascending: false })
+    .limit(1)
+
+    if(!error){
+      res.status(200).json(data);
+    }
+})
+
+app.get('/getWaterLvlStat',async(req,res)=>{
+  let { data, error } = await supabase
+    .from(req.body.tblName)
+    .select('data')
+    .order('created_at', { ascending: false })
+    .limit(1)
+
+    if(!error){
+      res.status(200).json(data);
+    }
+})
+
+app.get('/getWaterTempStat',async(req,res)=>{
+  let { data, error } = await supabase
+    .from(req.body.tblName)
+    .select('data')
+    .order('created_at', { ascending: false })
+    .limit(1)
+
+    if(!error){
+      res.status(200).json(data);
+    }
+})
 app.listen(port, () => {
   console.log(`Example app listening on port ${port}`)
   if(supabase){
