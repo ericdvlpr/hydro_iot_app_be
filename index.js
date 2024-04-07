@@ -49,12 +49,14 @@ app.post('/addPhLvl',async(req,res)=>{
 })
 
 app.post('/addWaterLvl',async(req,res)=>{
+  console.log(req.body.data)
   const { error } = await supabase
   .from('waterLevels')
   .insert([
     { data: req.body.data },
   ])
   console.log(error)
+  
   if(!error){
     res.status(200).send("Water level data received");
   }
