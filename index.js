@@ -35,12 +35,13 @@ app.post('/addPhLvl',async(req,res)=>{
   
   const data = await getPlusMinusPhLvl().then(function(result){ return result.plusMinus})
   let phLvlData = +req.body.data + data
- 
+
   const { error } = await supabase
   .from('phLevels')
   .insert([
     { data: phLvlData },
   ])
+  console.log(error)
   if(!error){
     return res.status(200).send("PH level data received");
   }
@@ -53,6 +54,7 @@ app.post('/addWaterLvl',async(req,res)=>{
   .insert([
     { data: req.body.data },
   ])
+  console.log(error)
   if(!error){
     res.status(200).send("Water level data received");
   }
