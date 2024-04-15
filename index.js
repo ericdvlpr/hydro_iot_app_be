@@ -12,7 +12,7 @@ var last = first + 6; // last day is the first day + 6
 var firstday = new Date(curr.setDate(first)).toISOString();
 var lastday = new Date(curr.setDate(last)).toISOString();
 
-const port = 3000
+const port = 3500
 
 const app = express();
 
