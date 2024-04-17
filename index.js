@@ -48,7 +48,7 @@ app.post('/addPhLvl',async(req,res)=>{
  
 })
 
-app.post('/addWaterLvl',async(req,res)=>{
+app.post('/ ',async(req,res)=>{
   console.log(req.body.data)
   const { error } = await supabase
   .from('waterLevels')
