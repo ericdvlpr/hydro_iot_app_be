@@ -33,8 +33,8 @@ app.get("/api",(req,res)=>{
 app.post('/addPhLvl',async(req,res)=>{
   
   
-  const data = await getPlusMinusPhLvl().then(function(result){ return result.plusMinus})
-  let phLvlData = +req.body.data + data
+  // const data = await getPlusMinusPhLvl().then(function(result){ return result.plusMinus})
+  let phLvlData = +req.body.data 
 
   const { error } = await supabase
   .from('phLevels')
