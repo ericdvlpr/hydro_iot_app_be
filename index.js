@@ -89,17 +89,17 @@ if(!error){
         
  })
 
- app.post('/addSettings',async(req,res)=>{
-  
+ app.put('/addSettings',async(req,res)=>{
+
     const { data:settings,error } = await supabase
     .from('user_settings')
     .upsert([
       { 
         id:41,
-        phLevels: [req.body.selectedHigh,req.body.selectedLow],
-        tdsLevels:req.body.tdsLevel, 
-        waterTemp:req.body.waterTemp, 
-        waterLevels:req.body.waterLevel,
+        phLevels: [req.body.phLvlRange[0],req.body.phLvlRange[1]],
+        tdsLevels:[req.body.tdsLvlRange[0],req.body.tdsLvlRange[1]], 
+        waterTemp:[req.body.waterTempRange[0],req.body.waterTempRange[1]], 
+        waterLevels:[req.body.waterLevelRange[0],req.body.waterLevelRange[1]],
         plusMinus:req.body.settingplusMinusData
       },
     ]).select('*')
