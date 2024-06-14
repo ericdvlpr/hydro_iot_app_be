@@ -3,8 +3,10 @@ import {createClient} from '@supabase/supabase-js'
 import morgan from 'morgan'
 import bodyParser from "body-parser";
 import cors from 'cors';
+import {Expo} from "expo-server-sdk";
 
 
+const expo = new Expo();
 var curr = new Date; // get current date
 var first = curr.getDate() - curr.getDay(); // First day is the day of the month - the day of the week
 var last = first + 6; // last day is the first day + 6
@@ -26,9 +28,29 @@ const supabaseUrl = 'https://dgskmuaxbopqtdnkjiiy.supabase.co';
 const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRnc2ttdWF4Ym9wcXRkbmtqaWl5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MDQ1MTk0NTYsImV4cCI6MjAyMDA5NTQ1Nn0.PKMUsvv2lLpoR_32zLuBfzRIbLFHEUVDgw6-co8JZo0'
 const supabase = createClient(supabaseUrl,supabaseAnonKey);
 
+let token;
+
+app.get("/getExpoToken",(req,res)=>{
+  console.log(req.query)
+  if(req.query.token){
+    token=req.query.token
+    res.status(200).send("Token Received:");
+  }
+})
 app.get("/api",(req,res)=>{
   res.status(200).send("Api Connected");
+  sendNotif()
 })
+
+function sendNotif(){
+  expo.sendPushNotificationsAsync([
+    {
+      to: "ExponentPushToken[C_AC3yP9bxfGE4TpDswl7q]",
+      title: "Soil Water Level too Low!",
+      body: "Water Your Plant",
+    },
+  ]);
+}
 
 app.post('/addPhLvl',async(req,res)=>{
   
@@ -49,7 +71,7 @@ app.post('/addPhLvl',async(req,res)=>{
 })
 
 app.post('/addwaterLevels',async(req,res)=>{
-  console.log(req.body.data)
+
   const { error } = await supabase
   .from('waterLevels')
   .insert([
@@ -63,7 +85,6 @@ app.post('/addwaterLevels',async(req,res)=>{
  })
 
  app.post('/addWaterTmp',async(req,res)=>{
-  console.log(req.body)
   const { error } = await supabase
 .from('waterTemp')
 .insert([
@@ -171,7 +192,36 @@ if(!error){
   //   }
           
   })
+  async function checkSettings(){
+    let { data: user_settings, error } = await supabase
+    .from('user_settings')
+    .select('*')
+    .limit(1)
+    try{
 
+      if(!(user_settings[0]['tdsLevels'][0] >= lastTdsData && user_settings[0]['tdsLevels'][1] <= lastTdsData)){
+        schedulePushNotification('TdsLvl Notif','Abnormal readings detected for Tds Level Low:'+user_settings[0]['tdsLevels'][0]+'High:'+user_settings[0]['tdsLevels'][1])
+      }
+  
+      
+      if(!(user_settings[0]['waterLevels'][0] >= lastWaterlvlData && user_settings[0]['waterLevels'][1] <= lastWaterlvlData)){
+        schedulePushNotification('WaterLevel Notif','Abnormal readings detected for WaterLevel Low:'+user_settings[0]['waterLevels'][0]+'High:'+user_settings[0]['waterLevels'][1])
+      }
+  
+      
+      if(!(user_settings[0]['waterTemp'][0] >= lastWaterTmpData && user_settings[0]['waterTemp'][1] <= lastWaterTmpData)){
+        schedulePushNotification('WaterTemp Notif','Abnormal readings detected for WaterTemp Low:'+user_settings[0]['waterTemp'][0]+'High:'+user_settings[0]['waterTemp'][1])
+      }
+
+
+      if(!(user_settings[0]['phLevels'][0] >= lastPhData && user_settings[0]['phLevels'][1] <= lastPhData)){
+        schedulePushNotification('Phlvl Notif','Abnormal readings detected for PHlvl Low:'+user_settings[0]['phLevels'][0]+'High:'+user_settings[0]['phLevels'][1])
+      }
+    }catch(e){
+      console.log('notif error',e)
+    }
+   
+  }
   async function getPlusMinusPhLvl(){
     
     const { data, error } = await supabase
