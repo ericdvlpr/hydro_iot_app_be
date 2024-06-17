@@ -303,24 +303,24 @@ async function getLatestData(tblName){
 }
 
 //cronjob
-new CronJob(
-  "* */30  * * * *",
-  async function () {
-    console.log('every 30 mins')
-    if(await getLatestData('phLevels')){
-      let sent = false
-      let latestData = await getLatestData('phLevels')
-      let settingData = await getUserSetting('phLevels')
-      if((settingData[0]['phLevels'][0] >= latestData[0]['data'] && settingData[0]['phLevels'][1] <= latestData[0]['data'])==false){
+// new CronJob(
+//   "* */30  * * * *",
+//   async function () {
+//     console.log('every 30 mins')
+//     if(await getLatestData('phLevels')){
+//       let sent = false
+//       let latestData = await getLatestData('phLevels')
+//       let settingData = await getUserSetting('phLevels')
+//       if((settingData[0]['phLevels'][0] >= latestData[0]['data'] && settingData[0]['phLevels'][1] <= latestData[0]['data'])==false){
         
-        if(!sent){
-          console.log('Phlvl notification sent')
-          // sendNotif('Phlvl Notif','Abnormal readings detected for PHlvl')
-          sent=true
-        }
+//         if(!sent){
+//           console.log('Phlvl notification sent')
+//           // sendNotif('Phlvl Notif','Abnormal readings detected for PHlvl')
+//           sent=true
+//         }
         
-      }
-    }
+//       }
+//     }
     // if(await getLatestData('waterLevels')){
     //   let sent = false
     //   let latestData = await getLatestData('waterLevels')
@@ -372,11 +372,11 @@ new CronJob(
     // if(!(user_settings[0]['phLevels'][0] >= lastPhData && user_settings[0]['phLevels'][1] <= lastPhData)){
     //   schedulePushNotification('Phlvl Notif','Abnormal readings detected for PHlvl Low:'+user_settings[0]['phLevels'][0]+'High:'+user_settings[0]['phLevels'][1])
     // }
-  },
-  null,
-  false, //start
-  "Singapore"
-);
+//   },
+//   null,
+//   false, //start
+//   "Singapore"
+// );
 async function sendNotif(title,content){
   let { data, error } = await supabase
   .from('user_token')
