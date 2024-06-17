@@ -126,7 +126,6 @@ app.post("/addTdslvl", async (req, res) => {
     return result.tdsplusMinus;
   });
   let tdsLvlData = +req.body.data + data;
-  console.log(req.body.data + data)
   const { data: latestData, error } = await supabase
     .from("tdsLevels")
     .insert([{ data: tdsLvlData }])
