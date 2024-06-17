@@ -110,7 +110,6 @@ app.post('/addwaterLevels',async(req,res)=>{
 ])
 .select('data')
   if(!(settingData[0]['waterTemp'][0] >= latestData[0]['data'] && settingData[0]['waterTemp'][1] <= latestData[0]['data'])==false){
-        console.log('WaterTemp notification sent')
         sendNotif('WaterTemp Notif','Abnormal readings detected for WaterTemp')
     }
 if(!error){
@@ -130,7 +129,7 @@ if(!error){
     .select('data')
 
       if(!(settingData[0]['tdsLevels'][0] >= latestData[0]['data'] && settingData[0]['tdsLevels'][1] <= latestData[0]['data'])==false){
-            console.log('TdsLevel notification sent')
+
             sendNotif('TdsLevel Notif','Abnormal readings detected for Tds level')
         }
     if(!error){
@@ -381,7 +380,7 @@ async function sendNotif(title,content){
   let { data, error } = await supabase
   .from('user_token')
   .select('token')
-  console.log('thhis')
+  console.log('Notif Sent:',title)
   if(!error){
     if(data[0]['token']){
       expo.sendPushNotificationsAsync([
