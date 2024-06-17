@@ -70,7 +70,7 @@ app.post('/addPhLvl',async(req,res)=>{
   .select('data')
 
       let settingData = await getUserSetting('phLevels')
-      if((settingData[0]['phLevels'][0] >= latestData[0]['data'] && settingData[0]['phLevels'][1] <= latestData[0]['data'])==false){
+      if(!(settingData[0]['phLevels'][0] >= latestData[0]['data'] && settingData[0]['phLevels'][1] <= latestData[0]['data'])){
           
           await sendNotif('Phlvl Notif','Abnormal readings detected for PHlvl')
         
@@ -92,7 +92,7 @@ app.post('/addwaterLevels',async(req,res)=>{
   ])
   .select('data')
 
-  if((settingData[0]['waterLevels'][0] >= latestData[0]['data'] && settingData[0]['waterLevels'][1] <= latestData[0]['data'])==false){
+  if(!(settingData[0]['waterLevels'][0] >= latestData[0]['data'] && settingData[0]['waterLevels'][1] <= latestData[0]['data'])==false){
         
           console.log('WaterLevel notification sent')
           sendNotif('WaterLevel Notif','Abnormal readings detected for WaterLevel')
@@ -109,7 +109,7 @@ app.post('/addwaterLevels',async(req,res)=>{
   { data: req.body.data },
 ])
 .select('data')
-  if((settingData[0]['waterTemp'][0] >= latestData[0]['data'] && settingData[0]['waterTemp'][1] <= latestData[0]['data'])==false){
+  if(!(settingData[0]['waterTemp'][0] >= latestData[0]['data'] && settingData[0]['waterTemp'][1] <= latestData[0]['data'])==false){
         console.log('WaterTemp notification sent')
         sendNotif('WaterTemp Notif','Abnormal readings detected for WaterTemp')
     }
@@ -129,7 +129,7 @@ if(!error){
     ])
     .select('data')
 
-      if((settingData[0]['tdsLevels'][0] >= latestData[0]['data'] && settingData[0]['tdsLevels'][1] <= latestData[0]['data'])==false){
+      if(!(settingData[0]['tdsLevels'][0] >= latestData[0]['data'] && settingData[0]['tdsLevels'][1] <= latestData[0]['data'])==false){
             console.log('TdsLevel notification sent')
             sendNotif('TdsLevel Notif','Abnormal readings detected for Tds level')
         }
