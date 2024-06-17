@@ -4,6 +4,7 @@ import morgan from 'morgan'
 import bodyParser from "body-parser";
 import cors from 'cors';
 import {Expo} from "expo-server-sdk";
+import { CronJob } from 'cron';
 
 
 const expo = new Expo();
@@ -28,42 +29,54 @@ const supabaseUrl = 'https://dgskmuaxbopqtdnkjiiy.supabase.co';
 const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRnc2ttdWF4Ym9wcXRkbmtqaWl5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MDQ1MTk0NTYsImV4cCI6MjAyMDA5NTQ1Nn0.PKMUsvv2lLpoR_32zLuBfzRIbLFHEUVDgw6-co8JZo0'
 const supabase = createClient(supabaseUrl,supabaseAnonKey);
 
-let token;
 
-app.get("/getExpoToken",(req,res)=>{
-  console.log(req.query)
-  if(req.query.token){
-    token=req.query.token
+
+let token,phLvldata,tdslvldata,watertempdata,waterlvldata;
+
+
+app.get("/getExpoToken",async (req,res)=>{
+  console.log(req.query.usertoken)
+  const { data:settings,error } = await supabase
+    .from('user_token')
+    .upsert([
+      {
+        id:52,
+        token:req.query.usertoken
+      },
+    ]).select('token')
+  if(!error){
+    token = settings[0]['token']
+    console.log('return',token)
     res.status(200).send("Token Received:");
   }
 })
 app.get("/api",(req,res)=>{
   res.status(200).send("Api Connected");
-  sendNotif()
+  // sendNotif()
 })
 
-function sendNotif(){
-  expo.sendPushNotificationsAsync([
-    {
-      to: "ExponentPushToken[C_AC3yP9bxfGE4TpDswl7q]",
-      title: "Soil Water Level too Low!",
-      body: "Water Your Plant",
-    },
-  ]);
-}
 
+// console.log(token)
 app.post('/addPhLvl',async(req,res)=>{
-  
   
   const data = await getPlusMinusPhLvl().then(function(result){ return result.plusMinus})
   let phLvlData = +req.body.data + data
 
-  const { error } = await supabase
+  const { data:latestData,error } = await supabase
   .from('phLevels')
   .insert([
     { data: phLvlData },
   ])
-  console.log(error)
+  .select('data')
+
+      let settingData = await getUserSetting('phLevels')
+      if((settingData[0]['phLevels'][0] >= latestData[0]['data'] && settingData[0]['phLevels'][1] <= latestData[0]['data'])==false){
+          
+          await sendNotif('Phlvl Notif','Abnormal readings detected for PHlvl')
+        
+      }
+
+
   if(!error){
     return res.status(200).send("PH level data received");
   }
@@ -72,41 +85,57 @@ app.post('/addPhLvl',async(req,res)=>{
 
 app.post('/addwaterLevels',async(req,res)=>{
 
-  const { error } = await supabase
+  const { data:latestData,error } = await supabase
   .from('waterLevels')
   .insert([
     { data: req.body.data },
   ])
-  console.log(error)
-  
+  .select('data')
+
+  if((settingData[0]['waterLevels'][0] >= latestData[0]['data'] && settingData[0]['waterLevels'][1] <= latestData[0]['data'])==false){
+        
+          console.log('WaterLevel notification sent')
+          sendNotif('WaterLevel Notif','Abnormal readings detected for WaterLevel')
+      }
   if(!error){
     res.status(200).send("Water level data received");
   }
  })
 
  app.post('/addWaterTmp',async(req,res)=>{
-  const { error } = await supabase
+  const { data:latestData,error } = await supabase
 .from('waterTemp')
 .insert([
   { data: req.body.data },
 ])
-console.log(error)
+.select('data')
+  if((settingData[0]['waterTemp'][0] >= latestData[0]['data'] && settingData[0]['waterTemp'][1] <= latestData[0]['data'])==false){
+        console.log('WaterTemp notification sent')
+        sendNotif('WaterTemp Notif','Abnormal readings detected for WaterTemp')
+    }
 if(!error){
   res.status(200).send("Water Temp data received");
 }
  })
 
  app.post('/addTdslvl',async(req,res)=>{
+  const data = await getTdsPlusMinusPhLvl().then(function(result){ return result.plusMinus})
+  let tdsLvlData = +req.body.data + data
   
-const { error } = await supabase
-.from('tdsLevels')
-.insert([
-  { data: req.body.data },
-])
+    const { data:latestData,error } = await supabase
+    .from('tdsLevels')
+    .insert([
+      { data: tdsLvlData },
+    ])
+    .select('data')
 
-if(!error){
-  res.status(200).send("Tds lvl data received");
-}
+      if((settingData[0]['tdsLevels'][0] >= latestData[0]['data'] && settingData[0]['tdsLevels'][1] <= latestData[0]['data'])==false){
+            console.log('TdsLevel notification sent')
+            sendNotif('TdsLevel Notif','Abnormal readings detected for Tds level')
+        }
+    if(!error){
+      res.status(200).send("Tds lvl data received");
+    }
         
  })
 
@@ -117,11 +146,12 @@ if(!error){
     .upsert([
       { 
         id:41,
-        phLevels: [req.body.phLvlRange[0],req.body.phLvlRange[1]],
-        tdsLevels:[req.body.tdsLvlRange[0],req.body.tdsLvlRange[1]], 
-        waterTemp:[req.body.waterTempRange[0],req.body.waterTempRange[1]], 
-        waterLevels:[req.body.waterLevelRange[0],req.body.waterLevelRange[1]],
-        plusMinus:req.body.settingplusMinusData
+        phLevels: req.body[0].phLevels,
+        tdsLevels:req.body[0].tdsLevels, 
+        waterTemp:req.body[0].waterTemp, 
+        waterLevels:req.body[0].waterLevels,
+        plusMinus:req.body[0].plusMinus,
+        tdsplusMinus:req.body[0].tdsPlusMinus
       },
     ]).select('*')
 
@@ -199,24 +229,7 @@ if(!error){
     .limit(1)
     try{
 
-      if(!(user_settings[0]['tdsLevels'][0] >= lastTdsData && user_settings[0]['tdsLevels'][1] <= lastTdsData)){
-        schedulePushNotification('TdsLvl Notif','Abnormal readings detected for Tds Level Low:'+user_settings[0]['tdsLevels'][0]+'High:'+user_settings[0]['tdsLevels'][1])
-      }
-  
-      
-      if(!(user_settings[0]['waterLevels'][0] >= lastWaterlvlData && user_settings[0]['waterLevels'][1] <= lastWaterlvlData)){
-        schedulePushNotification('WaterLevel Notif','Abnormal readings detected for WaterLevel Low:'+user_settings[0]['waterLevels'][0]+'High:'+user_settings[0]['waterLevels'][1])
-      }
-  
-      
-      if(!(user_settings[0]['waterTemp'][0] >= lastWaterTmpData && user_settings[0]['waterTemp'][1] <= lastWaterTmpData)){
-        schedulePushNotification('WaterTemp Notif','Abnormal readings detected for WaterTemp Low:'+user_settings[0]['waterTemp'][0]+'High:'+user_settings[0]['waterTemp'][1])
-      }
-
-
-      if(!(user_settings[0]['phLevels'][0] >= lastPhData && user_settings[0]['phLevels'][1] <= lastPhData)){
-        schedulePushNotification('Phlvl Notif','Abnormal readings detected for PHlvl Low:'+user_settings[0]['phLevels'][0]+'High:'+user_settings[0]['phLevels'][1])
-      }
+     
     }catch(e){
       console.log('notif error',e)
     }
@@ -234,15 +247,27 @@ if(!error){
     }
   }
 
+  async function getTdsPlusMinusPhLvl(){
+    
+    const { data, error } = await supabase
+    .from('user_settings')
+    .select('tdsplusMinus')
+    .single();
+    
+    if(!error){
+     return data
+    }
+  }
+
   async function getUserSetting(sensor){
 
     let { data: user_settings, error } = await supabase
     .from('user_settings')
     .select(sensor)
     .eq('id', '41')
-  
+    .limit(1)
       if(!error){
-        res.status(200).json(user_settings);
+       return user_settings
       }
   }
 
@@ -264,52 +289,114 @@ function formatDate(date) {
   return [year, month, day].join('-');
 }
 
-app.get('/getPhLvlStat',async(req,res)=>{
-  console.log('this')
+
+async function getLatestData(tblName){
   let { data, error } = await supabase
-    .from('phLevels')
+    .from(tblName)
     .select('data')
-    .limit(5)
+    .order('created_at', { ascending: false })
+    .limit(1)
+
+    if(!error){
+      return data
+    }
+}
+
+//cronjob
+new CronJob(
+  "* */30  * * * *",
+  async function () {
+    console.log('every 30 mins')
+    if(await getLatestData('phLevels')){
+      let sent = false
+      let latestData = await getLatestData('phLevels')
+      let settingData = await getUserSetting('phLevels')
+      if((settingData[0]['phLevels'][0] >= latestData[0]['data'] && settingData[0]['phLevels'][1] <= latestData[0]['data'])==false){
+        
+        if(!sent){
+          console.log('Phlvl notification sent')
+          // sendNotif('Phlvl Notif','Abnormal readings detected for PHlvl')
+          sent=true
+        }
+        
+      }
+    }
+    // if(await getLatestData('waterLevels')){
+    //   let sent = false
+    //   let latestData = await getLatestData('waterLevels')
+    //   let settingData = await getUserSetting('waterLevels')
+    //   if((settingData[0]['waterLevels'][0] >= latestData[0]['data'] && settingData[0]['waterLevels'][1] <= latestData[0]['data'])==false){
+        
+        
+    //     if(!sent){
+    //       console.log('WaterLevel notification sent')
+    //       // sendNotif('WaterLevel Notif','Abnormal readings detected for WaterLevel')
+    //       sent=true
+    //     }
+    //   }
+    // }
+
+    // if(await getLatestData('waterTemp')){
+    //   let sent = false
+    //   let latestData = await getLatestData('waterTemp')
+    //   let settingData = await getUserSetting('waterTemp')
+    //   if((settingData[0]['waterTemp'][0] >= latestData[0]['data'] && settingData[0]['waterTemp'][1] <= latestData[0]['data'])==false){
+        
+    //     if(!sent){
+    //       console.log('WaterTemp notification sent')
+    //       // sendNotif('WaterTemp Notif','Abnormal readings detected for WaterTemp')
+    //       sent=true
+    //     }
+       
+    //   }
+    // }
+    // if(await getLatestData('tdsLevels')){
+    //   let sent = false
+    //   let latestData = await getLatestData('tdsLevels')
+    //   let settingData = await getUserSetting('tdsLevels')
+    //   if((settingData[0]['tdsLevels'][0] >= latestData[0]['data'] && settingData[0]['tdsLevels'][1] <= latestData[0]['data'])==false){
+    //     if(!sent){
+    //       console.log('TdsLevel notification sent')
+    //       // sendNotif('TdsLevel Notif','Abnormal readings detected for Tds level')
+    //       sent=true
+    //     }
+       
+    //   }
+    // }
+    
+    // if(!(user_settings[0]['waterTemp'][0] >= lastWaterTmpData && user_settings[0]['waterTemp'][1] <= lastWaterTmpData)){
+    //   schedulePushNotification('WaterTemp Notif','Abnormal readings detected for WaterTemp Low:'+user_settings[0]['waterTemp'][0]+'High:'+user_settings[0]['waterTemp'][1])
+    // }
+
+
+    // if(!(user_settings[0]['phLevels'][0] >= lastPhData && user_settings[0]['phLevels'][1] <= lastPhData)){
+    //   schedulePushNotification('Phlvl Notif','Abnormal readings detected for PHlvl Low:'+user_settings[0]['phLevels'][0]+'High:'+user_settings[0]['phLevels'][1])
+    // }
+  },
+  null,
+  false, //start
+  "Singapore"
+);
+async function sendNotif(title,content){
+  let { data, error } = await supabase
+  .from('user_token')
+  .select('token')
+  console.log('thhis')
+  if(!error){
+    if(data[0]['token']){
+      expo.sendPushNotificationsAsync([
+        {
+          to: data[0]['token'],
+          title: title,
+          body: content,
+        },
+      ]);
+    }
+  }
+
+  
  
-    if(!error){
-      res.status(200).json(data);
-    }
-})
-app.get('/getTDSLvlStat',async(req,res)=>{
-  let { data, error } = await supabase
-    .from(req.body.tblName)
-    .select('data')
-    .order('created_at', { ascending: false })
-    .limit(1)
-
-    if(!error){
-      res.status(200).json(data);
-    }
-})
-
-app.get('/getWaterLvlStat',async(req,res)=>{
-  let { data, error } = await supabase
-    .from(req.body.tblName)
-    .select('data')
-    .order('created_at', { ascending: false })
-    .limit(1)
-
-    if(!error){
-      res.status(200).json(data);
-    }
-})
-
-app.get('/getWaterTempStat',async(req,res)=>{
-  let { data, error } = await supabase
-    .from(req.body.tblName)
-    .select('data')
-    .order('created_at', { ascending: false })
-    .limit(1)
-
-    if(!error){
-      res.status(200).json(data);
-    }
-})
+}
 app.listen(port, () => {
   console.log(`Example app listening on port ${port}`)
   if(supabase){
