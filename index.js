@@ -151,7 +151,7 @@ app.put("/addSettings", async (req, res) => {
     .from("user_settings")
     .upsert([
       {
-        id: 41,
+        id: 42,
         phLevels: req.body[0].phLevels,
         tdsLevels: req.body[0].tdsLevels,
         waterTemp: req.body[0].waterTemp,
