@@ -37,7 +37,7 @@ app.get("/getExpoToken", async (req, res) => {
     .from("user_token")
     .upsert([
       {
-        id: 52,
+        id: 53,
         token: req.query.usertoken,
       },
     ])
